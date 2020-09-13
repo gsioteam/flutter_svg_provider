@@ -23,7 +23,7 @@ class MyHomePage extends StatelessWidget {
         decoration: BoxDecoration(
           image: DecorationImage(
             repeat: ImageRepeat.repeat,
-            image: Svg(
+            image: Svg.asset(
               'assets/test.svg',
               size: Size(10, 10),
             ),
@@ -40,7 +40,7 @@ class MyHomePage extends StatelessWidget {
               Image(
                 width: 100,
                 height: 100,
-                image: Svg('assets/test.svg'),
+                image: Svg.asset('assets/test.svg'),
               ),
             ],
           ),

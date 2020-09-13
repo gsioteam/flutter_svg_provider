@@ -1,11 +1,13 @@
 library flutter_svg_provider;
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui' as ui show Image, Picture;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 /// Rasterizes given svg picture for displaying in [Image] widget:
 ///
@@ -16,9 +18,8 @@ import 'package:flutter/services.dart' show rootBundle;
 ///   image: Svg('assets/my_icon.svg'),
 /// )
 /// ```
-class Svg extends ImageProvider<SvgImageKey> {
-  /// Path to svg file asset
-  final String asset;
+abstract class Svg extends ImageProvider<SvgImageKey> {
+  final String src;
 
   /// Size in logical pixels to render.
   /// Useful for [DecorationImage].
@@ -29,16 +30,19 @@ class Svg extends ImageProvider<SvgImageKey> {
   /// Width and height can also be specified from [Image] constrictor.
   /// Default size is 100x100 logical pixels.
   /// Different size can be specified in [Image] parameters
-  const Svg(this.asset, {this.size}) : assert(asset != null);
+  const Svg(this.src, {this.size}) : assert(src != null);
+
+  factory Svg.asset(String asset, {Size size}) => SvgAsset(asset, size: size);
+  factory Svg.network(String url, {Size size, BaseCacheManager cacheManager, Map<String, String> headers}) => SvgNetwork(url, size: size, cacheManager: cacheManager, headers: headers);
 
   @override
   Future<SvgImageKey> obtainKey(ImageConfiguration configuration) {
-    final double logicWidth = size?.width ?? configuration.size?.width ?? 100;
-    final double logicHeight = size?.height ?? configuration.size?.width ?? 100;
+    final double logicWidth = size?.width ?? configuration.size?.width ?? 0;
+    final double logicHeight = size?.height ?? configuration.size?.width ?? 0;
     final double scale = configuration.devicePixelRatio ?? 1.0;
     return SynchronousFuture<SvgImageKey>(
       SvgImageKey(
-        assetName: asset,
+        assetName: src,
         pixelWidth: (logicWidth * scale).round(),
         pixelHeight: (logicHeight * scale).round(),
         scale: scale,
@@ -53,8 +57,8 @@ class Svg extends ImageProvider<SvgImageKey> {
     );
   }
 
-  static Future<ImageInfo> _loadAsync(SvgImageKey key) async {
-    final String rawSvg = await rootBundle.loadString(key.assetName);
+  Future<ImageInfo> _loadAsync(SvgImageKey key) async {
+    final String rawSvg = await loadResource(key);
     final DrawableRoot svgRoot = await svg.fromSvgString(rawSvg, key.assetName);
     final ui.Picture picture = svgRoot.toPicture(
       size: Size(
@@ -73,12 +77,14 @@ class Svg extends ImageProvider<SvgImageKey> {
     );
   }
 
+  Future<String> loadResource(SvgImageKey key);
+
   // Note: == and hashCode not overrided as changes in properties
   // (width, height and scale) are not observable from the here.
   // [SvgImageKey] instances will be compared instead.
 
   @override
-  String toString() => '$runtimeType(${describeIdentity(asset)})';
+  String toString() => '$runtimeType(${describeIdentity(src)})';
 }
 
 @immutable
@@ -128,4 +134,26 @@ class SvgImageKey {
   @override
   String toString() => '${objectRuntimeType(this, 'SvgImageKey')}'
       '(assetName: "$assetName", pixelWidth: $pixelWidth, pixelHeight: $pixelHeight, scale: $scale)';
+}
+
+class SvgAsset extends Svg {
+  const SvgAsset(String src, {Size size}) : super(src, size: size);
+
+  Future<String> loadResource(SvgImageKey key) async {
+    return rootBundle.loadString(key.assetName);
+  }
+}
+
+class SvgNetwork extends Svg {
+  final BaseCacheManager cacheManager;
+  final Map<String, String> headers;
+
+  const SvgNetwork(String src, {Size size,  this.cacheManager, this.headers}) : super(src, size: size);
+
+  @override
+  Future<String> loadResource(SvgImageKey key) async {
+    BaseCacheManager cacheManager = this.cacheManager ?? DefaultCacheManager();
+    File file = await cacheManager.getSingleFile(key.assetName, headers: this.headers);
+    return file.readAsString();
+  }
 }
