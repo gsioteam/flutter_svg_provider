@@ -34,6 +34,7 @@ abstract class Svg extends ImageProvider<SvgImageKey> {
 
   factory Svg.asset(String asset, {Size size}) => SvgAsset(asset, size: size);
   factory Svg.network(String url, {Size size, BaseCacheManager cacheManager, Map<String, String> headers}) => SvgNetwork(url, size: size, cacheManager: cacheManager, headers: headers);
+  factory Svg.file(String path, {Size size}) => SvgFile(path, size: size);
 
   @override
   Future<SvgImageKey> obtainKey(ImageConfiguration configuration) {
@@ -155,5 +156,15 @@ class SvgNetwork extends Svg {
     BaseCacheManager cacheManager = this.cacheManager ?? DefaultCacheManager();
     File file = await cacheManager.getSingleFile(key.assetName, headers: this.headers);
     return file.readAsString();
+  }
+}
+
+class SvgFile extends Svg {
+
+  const SvgFile(String src, {Size size}) : super(src, size: size);
+
+  @override
+  Future<String> loadResource(SvgImageKey key) {
+    return File(key.assetName).readAsString();
   }
 }
