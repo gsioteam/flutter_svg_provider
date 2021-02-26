@@ -10,7 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_svg: ^0.19.2+1
+  flutter_svg: 
+    git: 
+      url: https://github.com/dnfield/flutter_svg.git
+      ref: 7a4c059cb9247224a5a25facf7222486e84d694f
   cached_network_image: ^2.2.0+1
 
 dev_dependencies:
