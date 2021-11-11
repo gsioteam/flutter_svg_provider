@@ -25,16 +25,18 @@ abstract class Svg extends ImageProvider<SvgImageKey> {
   /// Useful for [DecorationImage].
   /// If not specified, will use size from [Image].
   /// If [Image] not specifies size too, will use default size 100x100.
-  final Size size; // nullable
+  final Size? size; // nullable
+
+  final Color color;
 
   /// Width and height can also be specified from [Image] constrictor.
   /// Default size is 100x100 logical pixels.
   /// Different size can be specified in [Image] parameters
-  const Svg(this.src, {this.size}) : assert(src != null);
+  const Svg(this.src, {this.size, this.color = const Color(0xffffffff)});
 
-  factory Svg.asset(String asset, {Size size}) => SvgAsset(asset, size: size);
-  factory Svg.network(String url, {Size size, BaseCacheManager cacheManager, Map<String, String> headers}) => SvgNetwork(url, size: size, cacheManager: cacheManager, headers: headers);
-  factory Svg.file(String path, {Size size}) => SvgFile(path, size: size);
+  factory Svg.asset(String asset, {Size? size}) => SvgAsset(asset, size: size);
+  factory Svg.network(String url, {Size? size, BaseCacheManager? cacheManager, Map<String, String> headers = const {}}) => SvgNetwork(url, size: size, cacheManager: cacheManager, headers: headers);
+  factory Svg.file(String path, {Size? size}) => SvgFile(path, size: size);
 
   @override
   Future<SvgImageKey> obtainKey(ImageConfiguration configuration) {
@@ -60,7 +62,7 @@ abstract class Svg extends ImageProvider<SvgImageKey> {
 
   Future<ImageInfo> _loadAsync(SvgImageKey key) async {
     final String rawSvg = await loadResource(key);
-    final DrawableRoot svgRoot = await svg.fromSvgString(rawSvg, key.assetName);
+    final DrawableRoot svgRoot = await svg.fromSvgString(rawSvg, SvgTheme(currentColor: color), key.assetName);
     final ui.Picture picture = svgRoot.toPicture(
       size: Size(
         key.pixelWidth.toDouble(),
@@ -91,10 +93,10 @@ abstract class Svg extends ImageProvider<SvgImageKey> {
 @immutable
 class SvgImageKey {
   const SvgImageKey({
-    @required this.assetName,
-    @required this.pixelWidth,
-    @required this.pixelHeight,
-    @required this.scale,
+    required this.assetName,
+    required this.pixelWidth,
+    required this.pixelHeight,
+    required this.scale,
   })  : assert(assetName != null),
         assert(pixelWidth != null),
         assert(pixelHeight != null),
@@ -138,7 +140,7 @@ class SvgImageKey {
 }
 
 class SvgAsset extends Svg {
-  const SvgAsset(String src, {Size size}) : super(src, size: size);
+  const SvgAsset(String src, {Size? size, Color color = const Color(0xffffffff)}) : super(src, size: size, color: color);
 
   Future<String> loadResource(SvgImageKey key) async {
     return rootBundle.loadString(key.assetName);
@@ -146,10 +148,10 @@ class SvgAsset extends Svg {
 }
 
 class SvgNetwork extends Svg {
-  final BaseCacheManager cacheManager;
+  final BaseCacheManager? cacheManager;
   final Map<String, String> headers;
 
-  const SvgNetwork(String src, {Size size,  this.cacheManager, this.headers}) : super(src, size: size);
+  const SvgNetwork(String src, {Size? size,  this.cacheManager, this.headers = const {}, Color color = const Color(0xffffffff)}) : super(src, size: size, color: color);
 
   @override
   Future<String> loadResource(SvgImageKey key) async {
@@ -161,7 +163,7 @@ class SvgNetwork extends Svg {
 
 class SvgFile extends Svg {
 
-  const SvgFile(String src, {Size size}) : super(src, size: size);
+  const SvgFile(String src, {Size? size, Color color = const Color(0xffffffff)}) : super(src, size: size, color: color);
 
   @override
   Future<String> loadResource(SvgImageKey key) {
