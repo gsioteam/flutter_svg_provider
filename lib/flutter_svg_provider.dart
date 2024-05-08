@@ -62,7 +62,9 @@ abstract class Svg extends ImageProvider<SvgImageKey> {
 
   Future<ImageInfo> _loadAsync(SvgImageKey key) async {
     final String rawSvg = await loadResource(key);
-    final DrawableRoot svgRoot = await svg.fromSvgString(rawSvg, SvgTheme(currentColor: color), key.assetName);
+    final DrawableRoot svgRoot = await svg.fromSvgString(rawSvg, key.assetName,
+      theme: SvgTheme(currentColor: color)
+    );
     final ui.Picture picture = svgRoot.toPicture(
       size: Size(
         key.pixelWidth.toDouble(),
